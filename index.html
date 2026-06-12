@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast Dashboard</title>
+    <!-- Google Fonts & Tailwind CSS for beautiful styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-500 to-indigo-900 min-h-screen text-white flex flex-col items-center justify-center p-4">
+
+    <!-- Main Dashboard Container -->
+    <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-2xl w-full max-w-md border border-white/20">
+        <h1 class="text-2xl font-bold text-center mb-6 tracking-wide">🌦️ Weather Dashboard</h1>
+        
+        <!-- Search Bar -->
+        <div class="flex gap-2 mb-6">
+            <input type="text" id="cityInput" placeholder="Enter city name..." class="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+            <button id="searchBtn" class="bg-white text-indigo-900 font-semibold px-4 py-2 rounded-lg hover:bg-white/90 transition duration-300">Search</button>
+        </div>
+
+        <!-- Weather Status Info -->
+        <div id="weatherInfo" class="text-center hidden">
+            <h2 id="cityName" class="text-3xl font-semibold mb-1">---</h2>
+            <p id="weatherDesc" class="text-white/80 capitalize mb-4">---</p>
+            
+            <!-- Weather Icon -->
+            <div class="flex justify-center mb-4">
+                <img id="weatherIcon" src="" alt="Weather Icon" class="w-24 h-24">
+            </div>
+
+            <div id="temp" class="text-5xl font-bold mb-6">--°C</div>
+
+            <!-- Extra Details Grid -->
+            <div class="grid grid-cols-2 gap-4 bg-white/10 p-4 rounded-xl border border-white/10">
+                <div class="text-left">
+                    <p class="text-xs text-white/60">💧 Humidity</p>
+                    <p id="humidity" class="text-lg font-medium">--%</p>
+                </div>
+                <div class="text-left">
+                    <p class="text-xs text-white/60">💨 Wind Speed</p>
+                    <p id="windSpeed" class="text-lg font-medium">-- m/s</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading / Status Messages -->
+        <div id="statusMessage" class="text-center py-8 text-white/80">
+            Getting your location weather...
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Your OpenWeatherMap API Key
+        const API_KEY = "899a5c89e575b7e2c8bba1c03f23c60f";
+
+        const cityInput = document.getElementById('cityInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const weatherInfo = document.getElementById('weatherInfo');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Fetch weather data from API
+        async function fetchWeather(url) {
+            try {
+                statusMessage.classList.remove('hidden');
+                statusMessage.innerText = "Loading data...";
+                weatherInfo.classList.add('hidden');
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayWeather(data);
+                } else {
+                    statusMessage.classList.remove('hidden');
+                    statusMessage.innerText = `Error: ${data.message}`;
+                }
+            } catch (error) {
+                statusMessage.classList.remove('hidden');
+                statusMessage.innerText = "Failed to fetch weather data.";
+            }
+        }
+
+        // Display weather to DOM
+        function displayWeather(data) {
+            statusMessage.classList.add('hidden');
+            weatherInfo.classList.remove('hidden');
+
+            document.getElementById('cityName').innerText = `${data.name}, ${data.sys.country}`;
+            document.getElementById('weatherDesc').innerText = data.weather[0].description;
+            document.getElementById('temp').innerText = `${Math.round(data.main.temp)}°C`;
+            document.getElementById('humidity').innerText = `${data.main.humidity}%`;
+            document.getElementById('windSpeed').innerText = `${data.wind.speed} m/s`;
+            
+            const iconCode = data.weather[0].icon;
+            document.getElementById('weatherIcon').src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+        }
+
+        // Get user's current location on load
+        function initGeolocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`;
+                        fetchWeather(url);
+                    },
+                    (error) => {
+                        statusMessage.innerText = "Location permission denied. Please search for a city manually.";
+                    }
+                );
+            } else {
+                statusMessage.innerText = "Geolocation is not supported by your browser.";
+            }
+        }
+
+        // Search button click handler
+        searchBtn.addEventListener('click', () => {
+            const city = cityInput.value.trim();
+            if (city) {
+                const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+                fetchWeather(url);
+            }
+        });
+
+        // Search input Enter key handler
+        cityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBtn.click();
+            }
+        });
+
+        // Initialize on page load
+        window.onload = initGeolocation;
+    </script>
+</body>
+</html>
